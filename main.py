@@ -1,8 +1,11 @@
-from typing import Union
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel
+from PIL import Image
+from io import BytesIO
+
 from app.bigram_model import BigramModel
 from app.embedding_model import calculate_embedding
+from app.image_classifier import classify_image
 
 
 app = FastAPI()
@@ -37,12 +40,35 @@ def generate_text(request: TextGenerationRequest):
         request.start_word,
         request.length
     )
-    return {"generated_text": generated_text}
+
+    return {
+        "generated_text": generated_text
+    }
+
 
 @app.get("/embedding")
 def get_embedding(word: str):
     embedding = calculate_embedding(word)
+
     return {
         "word": word,
         "embedding": embedding
+    }
+
+
+@app.post("/classify-image")
+async def classify_uploaded_image(
+    file: UploadFile = File(...)
+):
+    image_bytes = await file.read()
+
+    image = Image.open(
+        BytesIO(image_bytes)
+    )
+
+    predicted_class = classify_image(image)
+
+    return {
+        "filename": file.filename,
+        "predicted_class": predicted_class
     }

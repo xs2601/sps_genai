@@ -1,34 +1,24 @@
-# Use an official Python runtime as a parent image
 FROM python:3.12-slim-bookworm
 
-# The installer requires curl (and certificates) to download the release archive
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
 
-# Download the latest installer
 ADD https://astral.sh/uv/install.sh /uv-installer.sh
-
-# Run the installer then remove it
 RUN sh /uv-installer.sh && rm /uv-installer.sh
 
-# Ensure the installed binary is on the PATH
 ENV PATH="/root/.local/bin/:$PATH"
 
-# Set the working directory
 WORKDIR /code
 
-# Copy the project files needed by UV
 COPY pyproject.toml uv.lock README.md /code/
 COPY ./src /code/src
 
-# Install dependencies using UV
 RUN uv sync --frozen
 
-# Download the spaCy model needed for Assignment 1
 RUN uv run python -m spacy download en_core_web_lg
 
-# Copy the application code
 COPY ./app /code/app
+COPY ./helper_lib /code/helper_lib
+COPY ./models /code/models
 COPY main.py /code/
 
-# Command to run the application
 CMD ["uv", "run", "fastapi", "run", "main.py", "--port", "80"]
